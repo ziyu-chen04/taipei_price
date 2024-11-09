@@ -13,7 +13,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from datetime import date, datetime
-from function import detail,sumX,age_use2,genPPTX,addBulletPage,addSlideDF,makeDFtable
+from function import detail,sumX,age_use2,genPPTX,addBulletPage,addSlideDF,makeDFtable,create_ppt
 
 
 #%%####### (W).網站系統基本架構 ##########
@@ -338,143 +338,7 @@ def tmp(df,places,usefor,ages):
 
 def result(raw,df,data_explain,ppt_name,places):
     
-    prs = genPPTX("PPT函式的練習","by JSHeh, "+str(date.today()))
-    
-    # p1
-    prs = addBulletPage(prs,"KDD1 載入原始數據",
-                        ["1-1 原始數據展示"],
-                        [0])
-    prs = addSlideDF(prs, 1, raw)
-    # -------------------------------------
-    # p2
-    data_explain = pd.DataFrame(data_explain)
-    prs = addBulletPage(prs,"KDD1 載入原始數據",
-                        ["1-2 數據說明"],
-                        [0])
-    prs = addSlideDF(prs, 2, data_explain)
-    # -------------------------------------
-    # -------------------------------------
-    # p3
-    prs = addBulletPage(prs,"KDD2 探索交易數據",
-                        ["2-1 數據說明"],
-                        [0])
-    # 說明請後製
-    prs.slides[3].shapes.add_picture("img/correlation.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # -------------------------------------
-    # p4
-    
-    prs = addBulletPage(prs,"KDD3 交易數據轉換",
-                        ["1-1 數據說明"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 4, data_explain)
-    # -------------------------------------
-    # -------------------------------------
-    # p5
-    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
-                        ["4-1-a 四季度交易量"],
-                        [0])
-    # 說明請後製 & 還缺要加入的df
-    prs = addSlideDF(prs, 5, data_explain)
-    # -------------------------------------
-    # p6
-    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
-                        ["4-1-b 交易量圓餅圖"],
-                        [0])
-    # 說明請後製 
-    prs.slides[6].shapes.add_picture("img/circle.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # p7
-    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
-                        ["4-1-c 四季度平均單價"],
-                        [0])
-    # 說明請後製 & 還缺要加入的df
-    prs = addSlideDF(prs, 7, data_explain)
-    # -------------------------------------
-    # p8
-    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
-                        ["4-1-d 平均單價折線圖"],
-                        [0])
-    # 說明請後製 
-    prs.slides[8].shapes.add_picture("img/plot.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # -------------------------------------
-    # p9
-    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
-                        ["4-2-a 屋齡交易量"],
-                        [0])
-    # 說明請後製 & 還缺要加入的df
-    prs = addSlideDF(prs, 9, data_explain)
-    # -------------------------------------
-    # p10
-    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
-                        ["4-2-b 不同屋齡範圍的交易量"],
-                        [0])
-    # 說明請後製 
-    prs.slides[10].shapes.add_picture("img/radio1.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # p11
-    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
-                        ["4-2-c 不同屋齡範圍的房單價"],
-                        [0])
-    # 說明請後製 
-    prs.slides[11].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # -------------------------------------
-    #### p12~51  
-    for i,place in enumerate (places):
-        prs = addBulletPage(prs,"KDD4 （三）路段金額型",
-                        ["4-3  "+place+"路段"],
-                        [0])
-        # 說明請後製 找幾個比較特殊的講講
-        prs.slides[i+12].shapes.add_picture("img/bar/image"+str(i)+".png", Inches(2), Inches(2))
-    # -------------------------------------
-    # -------------------------------------
-    # p 52
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-a 平均每坪售價"],
-                        [0])
-    # 說明請後製  ****數學公式 還梅傑圖*****
-    prs.slides[52].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
-    # -------------------------------------
-    # p 53
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-b 用途 : 住家用"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 53, data_explain)
-    # -------------------------------------
-    # p 54
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-b 用途 : 商業用"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 54, data_explain)
-    # -------------------------------------
-    # p 55
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-b 用途 : 辦公用"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 55, data_explain)
-    # -------------------------------------
-    # p 56
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-b 用途 : 住商用"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 56, data_explain)
-    # -------------------------------------
-    # p 57
-    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
-                        ["4-4-b 用途 : 工業用"],
-                        [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 57, data_explain)
-    
-
-
+    prs = create_ppt(raw,df,data_explain,ppt_name,places)
     prs.save("ppt/test1.pptx")   #== (3).存檔 
     return
 
