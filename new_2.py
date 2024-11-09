@@ -373,9 +373,6 @@ def initSSS(variables, pjName):  ##== 初始化 state_session 的各變量 ==##
     return sss
 
 
-
-
-
 #%%##===== (W4).網站架構 =====#####
 if __name__ == "__main__":
     
@@ -385,12 +382,11 @@ if __name__ == "__main__":
     page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[tmp]","[匯出PPT檔]"])
 
     ##== (2).設定session初始值等 ==##
-    Xname = "Xinyi.csv"
-    df = "clean5.csv"
-    sss = initSSS(["X", "TWH", "Svyq", "Xname","df"], "AIp03圖形可視化W"+"--"+Xname)
+    Xname = "data/Xinyi.csv"
+
+    sss = initSSS(["X", "TWH", "Svyq", "Xname"], "AIp03圖形可視化W"+"--"+Xname)
     sss.Xname = Xname
-    sss.df = df
-    df = pd.read_csv("clean3.csv")
+    df = pd.read_csv("data/clean3.csv")
     ##== (3).設定 前台((b)sidebar + (c)canvas)主標題 ==##
     title = '<h1 style="font-family:sans-serif;text-align:center;margin: 0 0 5% 0;">2019-2024 信義區房價分析</h1>'
     st.markdown(title, unsafe_allow_html=True)
