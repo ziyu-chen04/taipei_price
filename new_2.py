@@ -13,6 +13,8 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from datetime import date, datetime
+from function import detail,sumX,age_use2,genPPTX,addBulletPage,addSlideDF,makeDFtable
+
 
 #%%####### (W).網站系統基本架構 ##########
 import streamlit as st
@@ -36,42 +38,31 @@ def getX(Xname):     ##== X = getX(Xname): 自 X.csv 讀取 X (KDD1), 並設定�
     # XXX["ym"] = pd.PeriodIndex(XXX.date, freq='M')
 
     XXX["quarter"] = pd.cut(XXX["month"], bins=[0, 3, 6, 9, 12], labels=["1", "2", "3", "4"])  #把月份离散处理成季度
-    XXX["AR"] = pd.cut(XXX["age"],bins=[0,10,20,30,50,100]).astype(str) #屋齡离散化 AgeRange
+    XXX["AR"] = pd.cut(XXX["age"],bins=[0,5,10,20,100], labels=["0~5", "6~10", "11~20", "20+"]) #屋齡离散化 AgeRange
+    XXX["AR"] = XXX["AR"].cat.add_categories("缺失值")
+    XXX["AR"] = XXX["AR"].fillna("缺失值")
+    XXX["AR"] = pd.Categorical(XXX["AR"], categories=["0~5", "6~10", "11~20", "20+","缺失值"], ordered=True)
+    XXX = XXX.sort_values("AR")
 
+    
     return (XXX)
 
-def sumX(df,ages,length,usefor):
-    scores=[]
-    
-    scores.append({"屋齡":ages[0],usefor[0]:length[0][0], usefor[1]:length[0][1],usefor[2]:length[0][2],usefor[3]:length[0][3],usefor[4]:length[0][4]})
-    scores.append({"屋齡":ages[1],usefor[0]:length[1][0], usefor[1]:length[1][1],usefor[2]:length[1][2],usefor[3]:length[1][3],usefor[4]:length[1][4]})
-    scores.append({"屋齡":ages[2],usefor[0]:length[2][0], usefor[1]:length[2][1],usefor[2]:length[2][2],usefor[3]:length[2][3],usefor[4]:length[2][4]})
-    scores.append({"屋齡":ages[3],usefor[0]:length[3][0], usefor[1]:length[3][1],usefor[2]:length[3][2],usefor[3]:length[3][3],usefor[4]:length[3][4]})
-    #scores.append({"屋齡":ages[4],usefor[0]:length[l][0], usefor[1]:length[l][1],usefor[2]:length[l][2],usefor[3]:length[l][3]})
 
-    score_df = pd.DataFrame(scores)
-
-    return score_df
-
+def aa(a0,ages):
+    p=[]
+    for i,age in enumerate(ages):
+        p.append({"屋齡":age,"地點":str(a0[a0[age] == a0[age].max()].index.values).replace("'",''),"坪/萬":a0[age][a0[age] == a0[age].max()].values })
+    p = pd.DataFrame(p)
+    p.set_index('屋齡', inplace=True)
+    return p
 #%%##===== (W2).儀表板函式庫: 前台(a)navbar,(b)sidebar,(c)canvas,後台(d) =====#####
-def 擷取交易(fname):  ##== (KDD1)擷取交易儀表板: X = 擷取交易(fnameX) ==##
+def 擷取交易(fname,data_explain):  ##== (KDD1)擷取交易儀表板: X = 擷取交易(fnameX) ==##
     ##== (d).後台 ==##
     X = getX(fname)
     print("\n\n>>>>> 擷取交易數據 (-->XXX) -----")  # -- 偵錯用
 
-    data = {
-        "columns": [
-            "地段","datetime","total_price","unit_price","area","主建物佔比","型態",
-            "age","樓別/樓高","交易標的","交易筆棟數","建物現況格局","parking_price","管理組織",
-            "電梯","主要用途","備註"
-        ],
-        "說明": [
-            "信義區的路段","交易日期","總價（以台幣為單位）", "單位價格", "坪數","實際可使用坪數","房子型態",
-            "屋齡","樓別/樓高","實際獲得","--","--","車位價格","有無管理單位",
-            "有無電梯","住家or商等","--"
-        ]
-    }
-    df = pd.DataFrame(data)
+
+    data_explain = pd.DataFrame(data_explain)
     # 选择特定的列
     selected_columns = X[['year', 'month', 'yq',  'quarter', 'AR']]
     # 设置显示 index
@@ -100,7 +91,7 @@ def 擷取交易(fname):  ##== (KDD1)擷取交易儀表板: X = 擷取交易(fna
     st.subheader("1-2. 數據說明")
     
     cols1 = st.columns([1,1])
-    cols1[0].table(df)
+    cols1[0].table(data_explain)
     st.markdown("---")
 
     
@@ -169,7 +160,7 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     cols = st.columns([1, 1])  # -- (d).前台--canvas
     cols[0].subheader("1.1 四季度交易量")
     cols[0].dataframe(Ta)
-    cols[1].subheader("1.2 交易量饼状图")
+    cols[1].subheader("1.2 交易量圓餅圖")
     cols[1].plotly_chart(FIGym1, theme="streamlit", use_container_width=True)
     st.subheader("1.3 數據解讀(KDD5) ")
     st.write('''   
@@ -226,23 +217,21 @@ def 屋齡模型(XXX):
     cols[1].plotly_chart(fig1,theme="streamlit", use_container_width=True)
     st.subheader("3. 數據解讀(KDD5)")
     st.html('''
-    <p>比較兩張圖:</p>
-    <p>(1) <span style="background-color:yellow">屋齡對房屋購買有一定影響力</span>：新屋價格較高，但交易量低，顯示市場對價格敏感。隨著屋齡增加，<span style="background-color:yellow">價格下降，交易量增高</span>，許多買家偏好價格適中的房屋。</p>
-
-    <p>(2) <span style="background-color:yellow">房屋價格隨屋齡增加而下降</span>，在<span style="background-color:yellow">(30,50)歲屋齡交易量達到高峰</span>，顯示部分買家願意購買屋齡較高的房屋以降低購房成本；<span style="background-color:yellow">50年以上屋齡的交易量下降</span>，反映市場對老屋需求低。</p>
-
-    <p>(3) 無屋齡資料的房屋單價偏高，<span style="background-color:yellow">交易量排名第二</span>，可能位於特定地段或生活機能完善之處，即便無法判定屋齡，<span style="background-color:yellow">仍具高單價</span>。</p>
-
-    <p>(4) 無屋齡資料的房屋單價偏高，推測是因為這些房屋包含了一些無法確認屋齡但價值較高的房產，或者位於特定地段的房屋，即便沒有屋齡資料，<span style="background-color:yellow">仍具有相對高的單價</span>。<p>
-
-    <p>(5) <span style="background-color:yellow">屋齡越低單價越高</span>。****我對這個保有疑慮****</p>
-        ''')
+        <p>比較兩張圖:</p>
+        <p>(1) <span style="background-color:yellow">屋齡對房屋購買有一定影響力</span>：新屋價格較高，但交易量低，顯示市場對價格敏感。隨著屋齡增加，<span style="background-color:yellow">價格下降，交易量增高</span>，許多買家偏好價格適中的房屋。</p>
+        <p>(2) <span style="background-color:yellow">房屋價格隨屋齡增加而下降</span>，在<span style="background-color:yellow">(30,50)歲屋齡交易量達到高峰</span>，顯示部分買家願意購買屋齡較高的房屋以降低購房成本；<span style="background-color:yellow">50年以上屋齡的交易量下降</span>，反映市場對老屋需求低。</p>
+        <p>(3) 無屋齡資料的房屋單價偏高，<span style="background-color:yellow">交易量排名第二</span>，可能位於特定地段或生活機能完善之處，即便無法判定屋齡，<span style="background-color:yellow">仍具高單價</span>。</p>
+        <p>(4) 無屋齡資料的房屋單價偏高，推測是因為這些房屋包含了一些無法確認屋齡但價值較高的房產，或者位於特定地段的房屋，即便沒有屋齡資料，<span style="background-color:yellow">仍具有相對高的單價</span>。<p>
+        <p>(5) <span style="background-color:yellow">屋齡越低單價越高</span>。****我對這個保有疑慮****</p>
+    ''')
 
     return AM
     #AgeModel
 
 # return places,number_df,unit_df,price_df
-def select_option(df,places,usefor):
+def select_option(df,places,usefor,ages):
+    st.markdown("---")
+    st.html("<h2>== (KDD4) 交易模型（三）路段金額--</h2>")
     option = st.selectbox("選擇一個選項", ['永吉路','信義路','基隆路','吳興街',
                                     '忠孝東路','虎林街','和平東路','嘉興街','松德路','松隆路','松仁路',
                                     '市民大道六段','福德街','富陽街','光復南路','松勤街','文昌街',
@@ -252,43 +241,12 @@ def select_option(df,places,usefor):
                                     '健康路'])
     st.write("您選擇了：", option)
 
-    P,kind_P,P_age= 0,0,0
-    p,kind_p,p_age= float("inf"),0,0
-    show = []  
-    length,place_price = [],[]
-    ages = ["2~5", "6~10","11~20","20+"]
-
-    # age
-    for j,age in enumerate(ages):
-
-        # i用來控制用途
-        for i in range(5):
-        
-            length.append(len(df[(df["地段"]==places[option]) &(df["age"]==age) & (df["主要用途"]==int(i))]))
-            place_price.append(df["total_price"][(df["地段"]==places[option]) &(df["age"]==age) & (df["主要用途"]==int(i))].sum())
-            
-            tmp = df["unit_price"][(df["地段"]==places[option]) &(df["age"]==age) & (df["主要用途"]==int(i))].sum()/len(df["unit_price"][(df["地段"]==places[option]) &(df["age"]==age) & (df["主要用途"]==int(i))])
-            price_sum = df["unit_price"][(df["地段"]==int(0)) &(df["age"]==age) & (df["主要用途"]==int(i))].sum()
-            number = len(df["unit_price"][(df["地段"]==places[option]) &(df["age"]==age) & (df["主要用途"]==int(i))])
-
-            if P < tmp :
-                P = tmp
-                kind_P = i
-                P_age = age
-                P_number = number
-            if p > tmp :
-                p = tmp
-                kind_p = i
-                p_age = age
-                p_number = number
-
-    length = np.array(length).reshape(4,5)
-    place_price = np.array(place_price).reshape(4,5)
+    length , place_price,P,p = age_use2(df,places,ages,option,usefor)
 
     st.header(option+"段 每坪售出")
-    P_heigh = '<p style="font-family:sans-serif; color:	SteelBlue; font-size: 20px;">最高 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(P,usefor[kind_P],P_age)
+    P_heigh = '<p style="font-family:sans-serif; color:	SteelBlue; font-size: 20px;">最高 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(P[0],P[1],P[2])
     st.markdown(P_heigh, unsafe_allow_html=True)
-    P_low = '<p style="font-family:sans-serif; color:SlateGray; font-size: 20px;">最低 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(p,usefor[kind_p],p_age)
+    P_low = '<p style="font-family:sans-serif; color:SlateGray; font-size: 20px;">最低 : %.2f 萬 ,用途 : %s ,屋齡 : %s 年 </p>'%(p[0],p[1],p[2])
     st.markdown(P_low, unsafe_allow_html=True)
     fig = px.bar(df[df["地段"]==places[option]] , x="主要用途",y="total_price",
              color="age",
@@ -297,86 +255,227 @@ def select_option(df,places,usefor):
              #facet_col="day",
              #category_orders={"day": ["Thur","Fri","Sat","Sun"],"time":["Lunch", "Dinner"]}
             )
-    place = df[df["地段"]==places[option]].copy()
-    P = place[place['unit_price']==place['unit_price'].max()]
-    p = place[place['unit_price']==place['unit_price'].min()]
-    
     
     # 網頁上呈現
+    ## 圖
     st.plotly_chart(fig)
+    ## 文字 0~4各自表示甚麼意思
     new_title = '<p style="font-family:sans-serif; color:Green; font-size: 30px;">住家用 : 0 ,商業用 : 1 ,辦公用 : 2 ,住商用 : 3 ,工業用 : 4</p>'
     st.markdown(new_title, unsafe_allow_html=True)
+    ## 註解
     st.text("p.s(其他用途通常為停車使用)")
-
-
+    st.markdown("---")
 
     cols1 = st.columns([1,1])
+    
+    unit_df = sumX(df,ages,place_price/length,usefor)
+    price_df = sumX(df,ages,place_price,usefor)
     score_df = sumX(df,ages,length,usefor)
+
+
     score_df.set_index('屋齡', inplace=True)
     cols1[0].subheader("數量統計")
     cols1[0].write(score_df)
     
-    unit_df = sumX(df,ages,place_price/length,usefor)
     unit_df.set_index('屋齡', inplace=True)
-    cols1[1].subheader("平均單一物件金額")
+    cols1[1].subheader("平均單一物件金額(單位: 萬)")
     cols1[1].write(unit_df.style.highlight_max(axis=0))
     
-    price_df = sumX(df,ages,place_price,usefor)
+    
     price_df.set_index('屋齡', inplace=True)
-    cols1[0].subheader("金額統計")
+    cols1[0].subheader("金額統計(單位: 萬)")
     cols1[0].dataframe(price_df.style.highlight_max(axis=0),width=600)
+    
+    st.markdown("---")
+
+
+
+    return places[option],score_df,unit_df,price_df,fig
+
+
+def tmp(df,places,usefor,ages):
+    a =1
+    st.markdown("---")
+    st.html("<h2>== (KDD4) 交易模型（四）單位金額 --</h2>")
+    
+    st.html("<h2>平均每坪售價</h2>")
+    st.latex(r"""
+             \frac{\sum_i^n unit\_price_i}{len(unit\_price)}
+             """)
+    st.html("<h3>以下單位均為:  坪/萬</h3>")
+
+    cols2 = st.columns([1,1])
+    cols3 = st.columns([1,1])
+    cols4 = st.columns([1,1,1])
+    a0,a1,a2,a3,a4 = detail(df,places,ages)
+    p = aa(a0,ages)
+    cols2[0].html("<h4>用途 : 住家用</h4>")
+    cols2[0].text("")
+    cols2[0].write(p)
+    cols2[0].dataframe(a0.style.highlight_max())
+    p = aa(a1,ages)
+    cols2[1].html("<h4>商業用</h4>")
+    cols2[1].write(p)
+    cols2[1].dataframe(a1.style.highlight_max())
+
+    p = aa(a2,ages)
+    cols3[0].html("<h4>辦公用</h4>")
+    cols3[0].write(p)
+    cols3[0].dataframe(a2.style.highlight_max())
+    p = aa(a3,ages)
+    cols3[1].html("<h4>住商用</h4>")
+    cols3[1].write(p)
+    cols3[1].dataframe(a3.style.highlight_max())
+    
+    p = aa(a4,ages)
+    cols4[0].html("<h4>工業用</h4>")
+    cols4[0].write(p)
+    cols4[0].dataframe(a4.style.highlight_max())
+
+    
+    return a0,a1,a2,a3,a4
+
+
+def result(raw,df,data_explain,ppt_name,places):
+    
+    prs = genPPTX("PPT函式的練習","by JSHeh, "+str(date.today()))
+    
+    # p1
+    prs = addBulletPage(prs,"KDD1 載入原始數據",
+                        ["1-1 原始數據展示"],
+                        [0])
+    prs = addSlideDF(prs, 1, raw)
+    # -------------------------------------
+    # p2
+    data_explain = pd.DataFrame(data_explain)
+    prs = addBulletPage(prs,"KDD1 載入原始數據",
+                        ["1-2 數據說明"],
+                        [0])
+    prs = addSlideDF(prs, 2, data_explain)
+    # -------------------------------------
+    # -------------------------------------
+    # p3
+    prs = addBulletPage(prs,"KDD2 探索交易數據",
+                        ["2-1 數據說明"],
+                        [0])
+    # 說明請後製
+    prs.slides[3].shapes.add_picture("img/correlation.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # -------------------------------------
+    # p4
+    
+    prs = addBulletPage(prs,"KDD3 交易數據轉換",
+                        ["1-1 數據說明"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 4, data_explain)
+    # -------------------------------------
+    # -------------------------------------
+    # p5
+    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
+                        ["4-1-a 四季度交易量"],
+                        [0])
+    # 說明請後製 & 還缺要加入的df
+    prs = addSlideDF(prs, 5, data_explain)
+    # -------------------------------------
+    # p6
+    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
+                        ["4-1-b 交易量圓餅圖"],
+                        [0])
+    # 說明請後製 
+    prs.slides[6].shapes.add_picture("img/circle.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # p7
+    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
+                        ["4-1-c 四季度平均單價"],
+                        [0])
+    # 說明請後製 & 還缺要加入的df
+    prs = addSlideDF(prs, 7, data_explain)
+    # -------------------------------------
+    # p8
+    prs = addBulletPage(prs,"KDD4 交易模型（一）季度模型",
+                        ["4-1-d 平均單價折線圖"],
+                        [0])
+    # 說明請後製 
+    prs.slides[8].shapes.add_picture("img/plot.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # -------------------------------------
+    # p9
+    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
+                        ["4-2-a 屋齡交易量"],
+                        [0])
+    # 說明請後製 & 還缺要加入的df
+    prs = addSlideDF(prs, 9, data_explain)
+    # -------------------------------------
+    # p10
+    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
+                        ["4-2-b 不同屋齡範圍的交易量"],
+                        [0])
+    # 說明請後製 
+    prs.slides[10].shapes.add_picture("img/radio1.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # p11
+    prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
+                        ["4-2-c 不同屋齡範圍的房單價"],
+                        [0])
+    # 說明請後製 
+    prs.slides[11].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # -------------------------------------
+    #### p12~51  
+    for i,place in enumerate (places):
+        prs = addBulletPage(prs,"KDD4 （三）路段金額型",
+                        ["4-3  "+place+"路段"],
+                        [0])
+        # 說明請後製 找幾個比較特殊的講講
+        prs.slides[i+12].shapes.add_picture("img/bar/image"+str(i)+".png", Inches(2), Inches(2))
+    # -------------------------------------
+    # -------------------------------------
+    # p 52
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-a 平均每坪售價"],
+                        [0])
+    # 說明請後製  ****數學公式 還梅傑圖*****
+    prs.slides[52].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
+    # -------------------------------------
+    # p 53
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-b 用途 : 住家用"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 53, data_explain)
+    # -------------------------------------
+    # p 54
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-b 用途 : 商業用"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 54, data_explain)
+    # -------------------------------------
+    # p 55
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-b 用途 : 辦公用"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 55, data_explain)
+    # -------------------------------------
+    # p 56
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-b 用途 : 住商用"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 56, data_explain)
+    # -------------------------------------
+    # p 57
+    prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
+                        ["4-4-b 用途 : 工業用"],
+                        [0])
+    # 說明請後製  & 還缺要加入的df
+    prs = addSlideDF(prs, 57, data_explain)
     
 
 
-    location_price=[]
-    unit_price=[]
-    # 用來控地點
-    for i,place in enumerate (places):
-        # age
-        for j,age in enumerate(ages):
-            location_price.append(df["total_price"][(df["地段"]==i) &(df["age"]==age)].sum())
-            unit_price.append(df["total_price"][(df["地段"]==i) &(df["age"]==age)].sum()/len(df["total_price"][(df["地段"]==i) &(df["age"]==age)]))
-    location_price = np.array(location_price).reshape(len(places),4)
-    unit_price = np.array(unit_price).reshape(len(places),4)
-
-    place_age=[]
-    unit_place_age=[]
-    for j , p in enumerate (places):
-        place_age.append({"地點":p,ages[0]:location_price[j][0], ages[1]:location_price[j][1],ages[2]:location_price[j][2],ages[3]:location_price[j][3]})
-        unit_place_age.append({"地點":p,ages[0]:unit_price[j][0], ages[1]:unit_price[j][1],ages[2]:unit_price[j][2],ages[3]:unit_price[j][3]})
-
-    place_age_df = pd.DataFrame(place_age)
-    place_age_df.set_index('地點', inplace=True)
-    unit_place_age_df = pd.DataFrame(unit_place_age)
-    unit_place_age_df.set_index('地點', inplace=True)
-
-    st.text("place_age_df")
-    st.dataframe(place_age_df.style.highlight_max(axis=1))
-    st.text("unit_place_age_df缺用途")
-    st.dataframe(unit_place_age_df.style.highlight_max(axis=1))
-    return places[option],score_df,unit_df,price_df
-
-def 匯出PPT檔(PPTname):   ##== (KDD5) 匯出PPT檔(PPTname) ==##
-    print(sss)
-    #== (c1/d1).標題: 前台-canvas/前台-sidebar ==##
-    st.header("(KDD5).匯出PPT檔案")
-    st.sidebar.header("(KDD5).匯出PPT檔案");
-    if st.sidebar.checkbox("* (KDD5) 匯出至 PPTX檔"):
-        #== (b).後台-存檔 ==##
-        sug_list = [ { "Ptitle": "謝謝", "Plist":  ["~~敬請指教!!"], "Plevel": [ 0 ] } ];    appendPPTX(sug_list)
-        sss.prs.save(PPTname)
-        #== (c2/d2).前台-canvas: 匯出 ==##
-        st.subheader(f"* (KDD5) 匯出LOG 至PPT檔--{PPTname} --")
-        st.write(f"* (KDD5) PPT檔--{PPTname} 己匯出")
-        st.sidebar.write("* (KDD5) PPTX 己匯出")
-        #== (c2/d2).前台-canvas: 匯出 ==##
-        st.subheader("* PPT檔案結構 --")
-        for slide_number, slide in enumerate(sss.prs.slides, start=1):
-            title = None
-            for shape in slide.shapes:
-                if shape.has_text_frame:  title = shape.text
-            if title: st.write(f"* [第{slide_number}頁] {title}")
-            else:     st.write(f"* [第{slide_number}頁] 沒有標題")
+    prs.save("ppt/test1.pptx")   #== (3).存檔 
     return
 
 #%%##===== (W3).導航函式庫 =====#####
@@ -410,101 +509,26 @@ def initSSS(variables, pjName):  ##== 初始化 state_session 的各變量 ==##
     return sss
 
 
-# %%##===== (W3).本系統函式庫: (1)列印PPT,(2)導航 =====#####
-
-# %%== (1).列印PPTX的函式庫: genPPTX(),addBulletPage(),addSlideDF(),makeDFtable() ==##
-def genPPTX(mainTitle, subTitle):  ##== prs = genPPTX(mainTitle,subTitle): 產生一份新的投影片
-    from pptx import Presentation
-    prs = Presentation()
-    slide0 = prs.slides.add_slide(prs.slide_layouts[0])
-    slide0.shapes.title.text = mainTitle;
-    slide0.placeholders[1].text = subTitle
-    return prs
 
 
-def addBulletPage(prs, Ptitle, Plist,
-                  Plevel):  ##== prs = addBulletPage(prs,Ptitle,Plist,Plevel): 增加一個重點(Plist)頁,並設定重點層級(Plevel)及顏色 (Plevel=1)
-    slide = prs.slides.add_slide(prs.slide_layouts[1]);  # -- 產生一頁(slide)新的 "標題與內容" 的重點頁(BulletPage)
-    slide.shapes.title.text = Ptitle  # -- 設定標題(Ptitle)
-    tf = slide.shapes.placeholders[1].text_frame  # -- 設定內文 文字框(tf)
-    for k in np.arange(len(Plist)):
-        if k == 0:
-            tf.text = Plist[0]  # -- 設定第 1 子標題 (tf.text = Plist[0])
-        else:  # -- 設定新增 子標題 (Plist[k]), 其層級 (Plevel[k]) 及顏色 (Plevel=1為粗體彩色)
-            p = tf.add_paragraph();
-            p.level = Plevel[k];
-            p.text = Plist[k]
-            if (p.level == 1):
-                p.font.bold = True
-                p.font.color.rgb = RGBColor(0, 0, 255)  # RGBColor(0xFF, 0x7F, 0x50)
-    print("addBulletPage>>> generate Bullet Page-" + Ptitle)
-    return prs
-
-
-def addSlideDF(prs, ind, Ptable):  ##== prs = addSlideDF(prs,ind,Ptable): 將表格(Ptable)加入某頁 (prs.slides[ind])
-    shapes = prs.slides[ind].shapes
-    if (Ptable is not None):
-        print("addSlideDF>>> generate dataframe Table...")
-        left, top, width, height = Inches(1), Inches(1), Inches(8), Inches(6)
-        table = shapes.add_table(Ptable.shape[0], Ptable.shape[1], left, top, width, height).table
-        for i in np.arange(Ptable.shape[0]):
-            for j in np.arange(Ptable.shape[1]):
-                table.cell(i, j).text = str(list(Ptable.iloc[i])[j])
-    return prs
-
-
-def makeDFtable(df):  ##== table = makeDFtable(df): make df to table with first row as column names
-    Xcol = pd.DataFrame(df.columns).transpose();
-    Xcol.columns = df.columns;
-    AAA = pd.concat([Xcol, df], axis=0);
-    Arow = pd.DataFrame(AAA.index);
-    Arow.index = Arow[Arow.columns[0]];
-    BBB = pd.concat([Arow, AAA], axis=1);
-    BBB.index = Arow[Arow.columns[0]]
-    return BBB
-
-
-# %%== (2).導航函式庫: appendPPTX(),check2log(),initSSS() ==##
-def appendPPTX(rv_list):  ##== 以傳回數據(rv_list)生成投影片sss.prs ==##
-    print(rv_list)
-    with st.sidebar.expander("___ 當前投影片生成步驟 ....."):
-        for i, rv in enumerate(rv_list):
-            st.write(">> 生成投影片第" + str(len(sss.prs.slides) - 1) + "頁-" + rv.get("Ptitle") + " 中...")
-            # st.sidebar.write(">> 生成"+rv.get("Ptitle")+"投影片中...")
-            print(rv)
-            if rv.get("Ptitle"): sss.prs = addBulletPage(sss.prs, rv.get("Ptitle"), rv.get("Plist"), rv.get("Plevel"))
-            # if rv.get("df"):  sss.prs = addSlideDF(sss.prs, len(sss.prs.slides)-1, sss[rv.get("df")].head(2))
-            if rv.get("df"):
-
-                dfList = rv.get("df")
-                for dfFile in dfList:  sss.prs = addSlideDF(sss.prs, len(sss.prs.slides) - 1,
-                                                            makeDFtable(sss[dfFile].head(2)))
-            if rv.get("table"):
-                tblList = rv.get("table")
-                for tbl in tblList:  sss.prs = addSlideDF(sss.prs, len(sss.prs.slides) - 1, makeDFtable(sss[tbl]))
-            if rv.get("fig"):
-                slide1 = sss.prs.slides[len(sss.prs.slides) - 1]
-                picList = rv.get("fig")
-                for picFile in picList:  pic1 = slide1.shapes.add_picture(picFile, Inches(1), Inches(
-                    1));  # print(">>>>> 2."+picFile)
-    return
 
 #%%##===== (W4).網站架構 =====#####
 if __name__ == "__main__":
+    
     ##== (1).設定頁面組態 與 導航列 (前台(a)navbar) ==##
     st.set_page_config(page_title="SPC-S01 RDS系統", page_icon="✅", layout="wide",)  #==> [[AIp04/C4)(5)加上頁註,頁標題等]]
     # st.set_option('deprecation.showPyplotGlobalUse', False)
-    page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[匯出PPT檔]"])
+    page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[tmp]","[匯出PPT檔]"])
 
     ##== (2).設定session初始值等 ==##
     Xname = "Xinyi.csv"
-    df = "clean2.csv"
+    df = "clean5.csv"
     sss = initSSS(["X", "TWH", "Svyq", "Xname","df"], "AIp03圖形可視化W"+"--"+Xname)
     sss.Xname = Xname
     sss.df = df
     df = pd.read_csv("clean3.csv")
     ##== (3).設定 前台((b)sidebar + (c)canvas)主標題 ==##
-    title = '<h1 style="font-family:sans-serif;text-align:center;margin: 0 0 5% 0;">AIp04空間與網站: 初步運營分析儀表板(S01)</h1>'
+    title = '<h1 style="font-family:sans-serif;text-align:center;margin: 0 0 5% 0;">2019-2024 信義區房價分析</h1>'
     st.markdown(title, unsafe_allow_html=True)
     
     st.sidebar.title("初步運營分析(S01)控制盤--")
@@ -516,11 +540,24 @@ if __name__ == "__main__":
               '紫雲街':22,'崇德街':23,'東興路':24,'松智路':25,'中坡北路':26,'莊敬路':27,'松信路':28,
               '仁愛路':29,'松高路':30,'松勇路':31,'逸仙路':32,'大道路':33,'林口街':34,'青雲街':35,
               '瑞雲街':36,'祥雲街':37,'健康路':38}
-    usefor = {0:'住家用', 1:'商業用', 2:'辦公用', 3:'其他', 4:'住商用', 5:'工業用'}
+    usefor = {0:'住家用', 1:'商業用', 2:'辦公用', 3:'住商用', 4:'工業用'}
+    ages = ["2~5", "6~10","11~20","20+"]
+    data_explain = {
+        "columns": [
+            "地段","datetime","total_price","unit_price","area","主建物佔比","型態",
+            "age","樓別/樓高","交易標的","交易筆棟數","建物現況格局","parking_price","管理組織",
+            "電梯","主要用途","備註"
+        ],
+        "說明": [
+            "信義區的路段","交易日期","總價（以台幣為單位）", "單位價格", "坪數","實際可使用坪數","房子型態",
+            "屋齡","樓別/樓高","實際獲得","--","--","車位價格","有無管理單位",
+            "有無電梯","住家or商等","--"
+        ]
+    }
     ##== (4).導航切換: 前台(a)navbar-->儀表板函式(b,c,d) ==##
     match page:
         case "[擷取交易]":
-            sss.X = 擷取交易(sss.Xname)
+            sss.X = 擷取交易(sss.Xname,data_explain)
             check2log(f"擷取交易: {sss.Xname} to get X with {sss.X.shape[0]} records", sss.LOG)
         case "[季度模型]":
             if sss.X is None:
@@ -535,6 +572,7 @@ if __name__ == "__main__":
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
                 sss.Svyq = 屋齡模型(sss.X)
+                st.write(sss.Svyq )
                 check2log(f"屋齡模型: Svyq with {sss.Svyq.shape} shape", sss.LOG)
 
         case "[路段選擇]":
@@ -542,14 +580,23 @@ if __name__ == "__main__":
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
-                sss.Svyq = select_option(df,places,usefor)
+                sss.Svyq = select_option(df,places,usefor,ages)
                 check2log(f"路段選擇: Svyq with {sss.Svyq[1].shape} shape", sss.LOG)
+        case "[tmp]":
+            if sss.df is None:
+                st.write("尚未擷取交易數據，請先擷取交易數據！")
+                sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
+            else:
+                sss.Svyq = tmp(df,places,usefor,ages)
+                check2log(f"路段選擇: Svyq with {sss.Svyq[1].shape} shape", sss.LOG)
+
         case "[匯出PPT檔]":
             if sss.df is None:
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
-                匯出PPT檔("信义区房价分析.PPTX")
+                raw = pd.read_csv("Xinyi.csv")
+                result(raw.head(2),df,data_explain,"123.PPTX",places)
 
     ##== (5).操作日誌 ==##
     st.sidebar.markdown('<h2 style="color: blue;">操作LOG日誌</h2>', unsafe_allow_html=True)
