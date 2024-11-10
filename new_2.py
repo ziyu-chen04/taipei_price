@@ -211,11 +211,10 @@ def 屋齡模型(XXX):
     st.subheader("3. 數據解讀(KDD5)")
     st.html('''
         <p>比較兩張圖:</p>
-        <p>(1) <span style="background-color:yellow">屋齡對房屋購買有一定影響力</span>：新屋價格較高，但交易量低，顯示市場對價格敏感。隨著屋齡增加，<span style="background-color:yellow">價格下降，交易量增高</span>，許多買家偏好價格適中的房屋。</p>
-        <p>(2) <span style="background-color:yellow">房屋價格隨屋齡增加而下降</span>，在<span style="background-color:yellow">(30,50)歲屋齡交易量達到高峰</span>，顯示部分買家願意購買屋齡較高的房屋以降低購房成本；<span style="background-color:yellow">50年以上屋齡的交易量下降</span>，反映市場對老屋需求低。</p>
-        <p>(3) 無屋齡資料的房屋單價偏高，<span style="background-color:yellow">交易量排名第二</span>，可能位於特定地段或生活機能完善之處，即便無法判定屋齡，<span style="background-color:yellow">仍具高單價</span>。</p>
-        <p>(4) 無屋齡資料的房屋單價偏高，推測是因為這些房屋包含了一些無法確認屋齡但價值較高的房產，或者位於特定地段的房屋，即便沒有屋齡資料，<span style="background-color:yellow">仍具有相對高的單價</span>。<p>
-        <p>(5) <span style="background-color:yellow">屋齡越低單價越高</span>。</p>
+        <p>(1) <span style="background-color:yellow">屋齡對房屋購買有一定影響力</span>：新屋價格較高，但交易量低，顯示市場對價格敏感。隨著屋齡增加，<span style="background-color:yellow">價格下降，交易量增高</span>，許多買家偏好價格適中的房屋，藉此降低購房成本。</p>
+        <p>(2) 無屋齡資料的房屋單價偏高，<span style="background-color:yellow">交易量排名第二</span>，可能位於特定地段或生活機能完善之處，即便無法判定屋齡，<span style="background-color:yellow">仍具高單價</span>。</p>
+        <p>(3) 無屋齡資料的房屋單價偏高，推測是因為這些房屋包含了一些無法確認屋齡但價值較高的房產，或者位於特定地段的房屋，即便沒有屋齡資料，<span style="background-color:yellow">仍具有相對高的單價</span>。<p>
+        <p>(4) <span style="background-color:yellow">屋齡越低單價越高，反之亦然。</span>。</p>
     ''')
 
     return AM
