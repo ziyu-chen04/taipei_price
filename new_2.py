@@ -215,7 +215,7 @@ def 屋齡模型(XXX):
         <p>(2) <span style="background-color:yellow">房屋價格隨屋齡增加而下降</span>，在<span style="background-color:yellow">(30,50)歲屋齡交易量達到高峰</span>，顯示部分買家願意購買屋齡較高的房屋以降低購房成本；<span style="background-color:yellow">50年以上屋齡的交易量下降</span>，反映市場對老屋需求低。</p>
         <p>(3) 無屋齡資料的房屋單價偏高，<span style="background-color:yellow">交易量排名第二</span>，可能位於特定地段或生活機能完善之處，即便無法判定屋齡，<span style="background-color:yellow">仍具高單價</span>。</p>
         <p>(4) 無屋齡資料的房屋單價偏高，推測是因為這些房屋包含了一些無法確認屋齡但價值較高的房產，或者位於特定地段的房屋，即便沒有屋齡資料，<span style="background-color:yellow">仍具有相對高的單價</span>。<p>
-        <p>(5) <span style="background-color:yellow">屋齡越低單價越高</span>。****我對這個保有疑慮****</p>
+        <p>(5) <span style="background-color:yellow">屋齡越低單價越高</span>。</p>
     ''')
 
     return AM
@@ -266,16 +266,16 @@ def select_option(df,places,usefor,ages):
     score_df = sumX(df,ages,length,usefor)
 
 
-    score_df.set_index('屋齡', inplace=True)
+    score_df.set_index('屋齡(年)', inplace=True)
     cols1[0].subheader("數量統計")
     cols1[0].write(score_df)
     
-    unit_df.set_index('屋齡', inplace=True)
+    unit_df.set_index('屋齡(年)', inplace=True)
     cols1[1].subheader("平均單一物件金額(單位: 萬)")
     cols1[1].write(unit_df.style.highlight_max(axis=0))
     
     
-    price_df.set_index('屋齡', inplace=True)
+    price_df.set_index('屋齡(年)', inplace=True)
     cols1[0].subheader("金額統計(單位: 萬)")
     cols1[0].dataframe(price_df.style.highlight_max(axis=0),width=600)
     
