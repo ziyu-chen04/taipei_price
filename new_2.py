@@ -13,7 +13,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from datetime import date, datetime
-from function import detail,sumX,age_use2,genPPTX,addBulletPage,addSlideDF,makeDFtable,create_ppt
+from function import detail,sumX,age_use2,genPPTX,addBulletPage,addSlideDF,makeDFtable,create_ppt,aa
 
 
 #%%####### (W).網站系統基本架構 ##########
@@ -30,7 +30,12 @@ from streamlit_navigation_bar import st_navbar
 #%%##===== (W1).自定公用函式庫 =====#####
 # @st.cache_data
 def getX(Xname):     ##== X = getX(Xname): 自 X.csv 讀取 X (KDD1), 並設定標籤 (KDD3) ==##
-    XXX = pd.read_csv(Xname)
+    a="1"
+    if type(Xname)==type(a):
+        
+        XXX = pd.read_csv(Xname)
+    else:
+        XXX = Xname
     XXX["date"] = pd.to_datetime(XXX["datetime"]).dt.date
     XXX["year"] = pd.to_datetime(XXX["datetime"]).dt.year
     XXX["month"] = pd.to_datetime(XXX["datetime"]).dt.month
@@ -48,13 +53,7 @@ def getX(Xname):     ##== X = getX(Xname): 自 X.csv 讀取 X (KDD1), 並設定�
     return (XXX)
 
 
-def aa(a0,ages):
-    p=[]
-    for i,age in enumerate(ages):
-        p.append({"屋齡":age,"地點":str(a0[a0[age] == a0[age].max()].index.values).replace("'",''),"坪/萬":a0[age][a0[age] == a0[age].max()].values })
-    p = pd.DataFrame(p)
-    p.set_index('屋齡', inplace=True)
-    return p
+
 #%%##===== (W2).儀表板函式庫: 前台(a)navbar,(b)sidebar,(c)canvas,後台(d) =====#####
 def 擷取交易(fname,data_explain):  ##== (KDD1)擷取交易儀表板: X = 擷取交易(fnameX) ==##
     ##== (d).後台 ==##
@@ -163,15 +162,12 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     cols[1].subheader("1.2 交易量圓餅圖")
     cols[1].plotly_chart(FIGym1, theme="streamlit", use_container_width=True)
     st.subheader("1.3 數據解讀(KDD5) ")
-    st.write('''   
-        (1) 忠孝東路、吳興街、永吉路、信義路和基隆路等核心街道屬於信義區的蛋黃區,交易量明顯高於其他街道，顯示信義區的房地產需求主要集中在這些核心地段。這些街道往往有良好的交通接駁、商業設施和高生活機能，因此吸引了大部分買家。
-
-        (2) 松山路、光復南路等街道雖然交易量不及核心街道，但仍具有一定市場需求，顯示出買家對價格和地段的平衡考量。
-
-        (3) 位於邊緣的街道交易量較少，反映出需求較低，這些區域的購房可能主要來自於預算考量或特定社區的偏好，而非大眾市場需求。
-
-        (4) 這張交易量圓餅圖反映出信義區房市需求的地理分布，顯示出購屋者偏好核心地帶，並逐漸向外擴展的趨勢,這對未來的房地產開發與市場定位具有參考價值。
-        ''')
+    st.html(''' 
+            <p>(1) <span style="background-color:yellow">忠孝東路、吳興街、永吉路、信義路和基隆路等核心街道屬於信義區的蛋黃區</span>，<span style="background-color:yellow">交易量明顯高於其他街道</span>，顯示出房地產需求集中於這些核心地段。這些街道擁有良好的交通接駁、商業設施和高生活機能，<span style="background-color:yellow">吸引大部分買家</span>。</p>
+            <p>(2) <span style="background-color:yellow">松山路、光復南路等街道交易量雖不及核心街道，但仍有一定市場需求</span>，反映出買家對<span style="background-color:yellow">價格與地段的平衡考量</span>。</p>
+            <p>(3) 位於<span style="background-color:yellow">邊緣的街道交易量較少</span>，顯示出需求較低，這些區域的購房主要源自預算考量或對特定社區的偏好，而非大眾市場需求。</p>
+            <p>(4) 這張交易量圓餅圖展示信義區房市需求的地理分布，<span style="background-color:yellow">顯示購屋者偏好核心地帶，並逐漸向外擴展</span>，對未來房地產開發與市場定位具參考價值。</p>
+                ''')
     st.markdown("---")
     cols1 = st.columns([1, 1])  # -- (d).前台--canvas
     cols1[0].subheader("2.1 四季度平均單價")
@@ -179,15 +175,12 @@ def 季度模型(XXX):    ##== (KDD2)季度模型儀表板: Svyq = 總成交結�
     cols1[1].subheader("2.2 平均單價折線圖")
     cols1[1].plotly_chart(FIGym, theme="streamlit", use_container_width=True)
     st.subheader("2.3 數據解讀(KDD5)")
-    st.write('''   
-    (1) 從2019年到2021年的平均單價在70至75之間微幅波動但還算穩定，可能反映出當時房市需求相對穩定或供需平衡。雖然2020年初疫情爆發，可能對市場帶來一些影響，但由於疫情初期人們對經濟前景不確定，需求可能有所下降，因此價格並未顯著上升。
-    
-    (2) 隨著2021年疫情趨緩，需求開始快速釋放加上工作模式的改變，遠程辦公興起，相對富裕的買家選擇在都市核心區域購買更大或更高級的房產，以提升生活和工作的便利性，因此房價上漲。
-    
-    (3) 2022上半年價格持續上漲，推測是在2021年價格上漲之後，市場信心進一步增強，買家預期房價會繼續上漲，促使更多人搶購，形成了價格上漲的正向循環；2022下半年價格大幅下跌，推測可能是房市過熱、房價上漲過快導致部分買家選擇觀望或撤出市場。
-
-    (4) 2023上半年雖然全球經濟環境充滿不確定因素，但部分購房需求仍然延續了疫情後的「報復性消費」模式,因此價格持續上漲；2023下半年，受到聯準會升息、地緣政治緊張(ex:中美競爭)、通膨、經濟不確定等因素影響，價格下跌。
-    ''')
+    st.html('''   
+    <p>(1) <span style="background-color:yellow">2019年至2021年間平均單價在70至75之間微幅波動，總體穩定</span>，顯示當時房市需求相對穩定或供需平衡。<span style="background-color:yellow">2020年初疫情雖對市場有影響，但因經濟前景不確定，需求下降，價格未顯著上升</span>。</p>
+    <p>(2) <span style="background-color:yellow">2021年疫情趨緩，需求快速釋放</span>，加上遠程辦公興起，富裕買家傾向在都市核心區購買更大或更高級的房產，<span style="background-color:yellow">房價因此上漲</span>。</p>
+    <p>(3) <span style="background-color:yellow">2022上半年價格持續上漲</span>，因市場信心增強，買家預期房價會上漲，<span style="background-color:yellow">形成價格上漲的正向循環</span>；<span style="background-color:yellow">2022下半年價格大幅下跌</span>，可能因房市過熱和價格上漲過快，部分買家選擇觀望或退出市場。</p>
+    <p>(4) <span style="background-color:yellow">2023上半年在疫情後需求延續「報復性消費」模式，價格持續上漲</span>；<span style="background-color:yellow">2023下半年受聯準會升息、地緣政治緊張、通膨等影響，價格下跌</span>。</p>    
+             ''')
 
     return Sv
 
@@ -336,11 +329,15 @@ def tmp(df,places,usefor,ages):
     return a0,a1,a2,a3,a4
 
 
-def result(raw,df,data_explain,ppt_name,places):
+def result(raw,df,data_explain,ppt_name,places,use,ages):
+    st.html("<h1>匯出ppt      2019-2024 信義區房價分析</h1>")
+    translate_raw = getX(raw)
     
-    prs = create_ppt(raw,df,data_explain,ppt_name,places)
+    prs = create_ppt(raw,df,data_explain,ppt_name,places,use,translate_raw,ages)
     prs.save("ppt/test1.pptx")   #== (3).存檔 
-    return
+    if True:
+        st.html("<h1>success !</h1>")
+    return 
 
 #%%##===== (W3).導航函式庫 =====#####
 def check2log(textStr,log):      ##== check 再將 textStr 納入 log 中, 並中並可以提供建議 ==##
@@ -379,14 +376,15 @@ if __name__ == "__main__":
     ##== (1).設定頁面組態 與 導航列 (前台(a)navbar) ==##
     st.set_page_config(page_title="SPC-S01 RDS系統", page_icon="✅", layout="wide",)  #==> [[AIp04/C4)(5)加上頁註,頁標題等]]
     # st.set_option('deprecation.showPyplotGlobalUse', False)
-    page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[tmp]","[匯出PPT檔]"])
+    page = st_navbar(["[擷取交易]", "[季度模型]","[屋齡模型]","[路段選擇]","[單位金額]","[匯出PPT檔]"])
 
     ##== (2).設定session初始值等 ==##
     Xname = "data/Xinyi.csv"
-
-    sss = initSSS(["X", "TWH", "Svyq", "Xname"], "AIp03圖形可視化W"+"--"+Xname)
+    df="data/clean5.csv"
+    sss = initSSS(["X", "TWH", "Svyq", "Xname","df"], "AIp03圖形可視化W"+"--"+Xname)
     sss.Xname = Xname
-    df = pd.read_csv("data/clean3.csv")
+    sss.df = df
+    df = pd.read_csv("data/clean5.csv")
     ##== (3).設定 前台((b)sidebar + (c)canvas)主標題 ==##
     title = '<h1 style="font-family:sans-serif;text-align:center;margin: 0 0 5% 0;">2019-2024 信義區房價分析</h1>'
     st.markdown(title, unsafe_allow_html=True)
@@ -432,7 +430,6 @@ if __name__ == "__main__":
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
                 sss.Svyq = 屋齡模型(sss.X)
-                st.write(sss.Svyq )
                 check2log(f"屋齡模型: Svyq with {sss.Svyq.shape} shape", sss.LOG)
 
         case "[路段選擇]":
@@ -442,7 +439,7 @@ if __name__ == "__main__":
             else:
                 sss.Svyq = select_option(df,places,usefor,ages)
                 check2log(f"路段選擇: Svyq with {sss.Svyq[1].shape} shape", sss.LOG)
-        case "[tmp]":
+        case "[單位金額]":
             if sss.df is None:
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
@@ -455,8 +452,10 @@ if __name__ == "__main__":
                 st.write("尚未擷取交易數據，請先擷取交易數據！")
                 sss.LOG.append("尚未擷取交易數據，請先擷取交易數據！")
             else:
-                raw = pd.read_csv("Xinyi.csv")
-                result(raw.head(2),df,data_explain,"123.PPTX",places)
+                raw = pd.read_csv("data/Xinyi.csv")
+                use = ["地段","datetime","total_price","unit_price","area","age","主要用途"]
+                raw = raw[["地段","datetime","total_price","unit_price","area","age","主要用途"]]
+                result(raw.head(2),df,data_explain,"2019-2024 信義區房價分析",places,use,ages)
 
     ##== (5).操作日誌 ==##
     st.sidebar.markdown('<h2 style="color: blue;">操作LOG日誌</h2>', unsafe_allow_html=True)

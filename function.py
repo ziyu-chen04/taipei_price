@@ -51,7 +51,7 @@ def detail(df,places,ages):
 def sumX(df,ages,length,usefor):
     scores=[]
     for i in range(4):
-        scores.append({"屋齡":ages[i],usefor[0]:length[i][0], usefor[1]:length[i][1],usefor[2]:length[i][2],usefor[3]:length[i][3],usefor[4]:length[i][4]})
+        scores.append({"屋齡(年)":ages[i],usefor[0]:length[i][0], usefor[1]:length[i][1],usefor[2]:length[i][2],usefor[3]:length[i][3],usefor[4]:length[i][4]})
         #scores.append({"屋齡":ages[4],usefor[0]:length[l][0], usefor[1]:length[l][1],usefor[2]:length[l][2],usefor[3]:length[l][3]})
     score_df = pd.DataFrame(scores)
     return score_df
@@ -90,6 +90,14 @@ def age_use2(df,places,ages,option,usefor):
     place_price = np.array(place_price).reshape(4,5)
     return length,place_price,(P,usefor[kind_P],P_age),(p,usefor[kind_p],p_age)
 
+
+def aa(a0,ages):
+    p=[]
+    for i,age in enumerate(ages):
+        p.append({"屋齡(年)":age,"地點":str(a0[a0[age] == a0[age].max()].index.values).replace("'",''),"坪/萬":a0[age][a0[age] == a0[age].max()].values })
+    p = pd.DataFrame(p)
+    p.set_index('屋齡(年)', inplace=True)
+    return p
 
 """
 prs = genPPTX(mainTitle,subTitle): 產生一份新的投影片
@@ -144,6 +152,30 @@ def addSlideDF(prs,ind,Ptable):
                 table.cell(i,j).text = str(list(Ptable.iloc[i])[j])
     return prs
 
+def add_personal_DF(prs,width,height,ind,df:pd.DataFrame , use_columns):
+    shapes = prs.slides[ind].shapes
+    
+    rows = df.shape[0]
+    cols = len(use_columns)
+ 
+    # table size & location
+    left = top = Inches(2.0)
+    
+ 
+    # add table into slide
+    table = shapes.add_table(rows+1, cols, left, top, width, height).table
+    ## table colum
+    
+    for j in range(len(use_columns)):
+        table.cell(0, j).text = str(use_columns[j])
+    # table style
+    table.style = "GRADE TABLE"
+    ## table start
+    for i in range(rows):
+        for j in range(cols):
+            table.cell(i+1, j).text = str(list(df.iloc[i])[j])
+    return prs
+
 def makeDFtable(df):                         ##==> table = makeDFtable(df): make df to table with first row as column names
     Xcol = pd.DataFrame(df.columns).transpose()
     Xcol.columns = df.columns
@@ -157,14 +189,14 @@ def makeDFtable(df):                         ##==> table = makeDFtable(df): make
 """
 prs = 建立好的ppt 還沒save的
 """
-def create_ppt(raw,df,data_explain,ppt_name,places):
-    prs = genPPTX("PPT函式的練習","by JSHeh, "+str(date.today()))
+def create_ppt(raw,df,data_explain,ppt_name,places,use_columns,translate_raw,ages):
+    prs = genPPTX(ppt_name,"by Lawrence,童舟,陳姿諭\n"+str(date.today()))
     
     # p1
     prs = addBulletPage(prs,"KDD1 載入原始數據",
                         ["1-1 原始數據展示"],
                         [0])
-    prs = addSlideDF(prs, 1, raw)
+    prs = add_personal_DF(prs,Inches(6.0),Inches(0.8), 1, raw,use_columns)
     # -------------------------------------
     # p2
     data_explain = pd.DataFrame(data_explain)
@@ -176,7 +208,7 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
     # -------------------------------------
     # p3
     prs = addBulletPage(prs,"KDD2 探索交易數據",
-                        ["2-1 數據說明"],
+                        ["2-1 correlation"],
                         [0])
     # 說明請後製
     prs.slides[3].shapes.add_picture("img/correlation.png", Inches(2), Inches(2))
@@ -185,10 +217,12 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
     # p4
     
     prs = addBulletPage(prs,"KDD3 交易數據轉換",
-                        ["1-1 數據說明"],
+                        ["3-1 產生的數據標籤"],
                         [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 4, data_explain)
+    translate_raw = translate_raw.head(2)
+    translate_raw_cols = np.array(translate_raw.columns)
+    # 說明請後製  
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 4, translate_raw,translate_raw_cols)
     # -------------------------------------
     # -------------------------------------
     # p5
@@ -224,8 +258,12 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
     prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
                         ["4-2-a 屋齡交易量"],
                         [0])
-    # 說明請後製 & 還缺要加入的df
-    prs = addSlideDF(prs, 9, data_explain)
+    AM = translate_raw.groupby("AR").agg({"地段": "nunique", "unit_price": "mean", "area":"count",
+                                      }).reset_index()
+    AM_col = ["屋齡範圍","地段数","房單價","交易量"]
+    AM.columns = ["屋齡範圍","地段数","房單價","交易量"]
+    # 說明請後製
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 9, AM,AM_col)
     # -------------------------------------
     # p10
     prs = addBulletPage(prs,"KDD4 交易模型（二）屋齡模型",
@@ -239,7 +277,7 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
                         ["4-2-c 不同屋齡範圍的房單價"],
                         [0])
     # 說明請後製 
-    prs.slides[11].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
+    prs.slides[11].shapes.add_picture("img/radio2.png", Inches(2), Inches(2), Inches(2), Inches(2))
     # -------------------------------------
     # -------------------------------------
     #### p12~51  
@@ -248,7 +286,7 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
                         ["4-3  "+place+"路段"],
                         [0])
         # 說明請後製 找幾個比較特殊的講講
-        prs.slides[i+12].shapes.add_picture("img/bar/image"+str(i)+".png", Inches(2), Inches(2))
+        prs.slides[i+12].shapes.add_picture("img/bar/image"+str(i)+".png", Inches(3), Inches(2), Inches(7), Inches(5))
     # -------------------------------------
     # -------------------------------------
     # p 52
@@ -256,48 +294,72 @@ def create_ppt(raw,df,data_explain,ppt_name,places):
                         ["4-4-a 平均每坪售價"],
                         [0])
     # 說明請後製  ****數學公式 還梅傑圖*****
-    prs.slides[51].shapes.add_picture("img/radio2.png", Inches(2), Inches(2))
+    prs.slides[51].shapes.add_picture("img/math.png", Inches(4), Inches(4), Inches(3), Inches(2))
     # -------------------------------------
     # p 53
     prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
                         ["4-4-b 用途 : 住家用"],
                         [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 52, data_explain)
+    a0,a1,a2,a3,a4 = detail(df,places,ages)
+    p = aa(a0,ages)
+    p = p.reset_index()
+    ## get columns  
+    p_col = np.array(p.columns)
+    # 說明請後製
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 52, p,p_col)
     # -------------------------------------
     # p 54
     prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
                         ["4-4-b 用途 : 商業用"],
                         [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 53, data_explain)
+    p = aa(a1,ages)
+    p = p.reset_index()
+    ## get columns   
+    p_col = np.array(p.columns)
+    # 說明請後製 
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 53, p,p_col)
     # -------------------------------------
     # p 55
     prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
                         ["4-4-b 用途 : 辦公用"],
                         [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 54, data_explain)
+    p = aa(a2,ages)
+    p = p.reset_index()
+    ## get columns  
+    p_col = np.array(p.columns)
+    # 說明請後製
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 54, p,p_col)
     # -------------------------------------
     # p 56
     prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
                         ["4-4-b 用途 : 住商用"],
                         [0])
-    # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 55, data_explain)
+    p = aa(a3,ages)
+    p = p.reset_index()
+    ## get columns  
+    p_col = np.array(p.columns)
+    # 說明請後製 
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 55, p,p_col)
     # -------------------------------------
     # p 57
     prs = addBulletPage(prs,"KDD4 交易模型（四）單位金額",
                         ["4-4-b 用途 : 工業用"],
                         [0])
+    p = aa(a4,ages)
+    p = p.reset_index()
+    ## get columns    
+    p_col = np.array(p.columns)
     # 說明請後製  & 還缺要加入的df
-    prs = addSlideDF(prs, 56, data_explain)
+    prs = add_personal_DF(prs,Inches(8.0),Inches(0.8), 56, p,p_col)
 
     return prs
 
 
 
+if __name__=="__main__":
+    pass
 
+    
 
 
 
